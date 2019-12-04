@@ -19,6 +19,24 @@ normalize_stochastic <- function(A) {
   return(A)
 }
 
+reflected_appraisal <- function(A) {
+  vertices<- length(A[1,])
+  AT <- t(A)
+  C <- A - diag(diag(A))
+  val <- Re(zapsmall(eigen(AT)$values))
+  vec <- Re(zapsmall(eigen(AT)$vectors))
+  newvec <- vector('double',vertices)
+  newvec[] <- 0
+  for (i in 1:vertices) {
+    if (val[i]==1) {
+      temp <- vec[,i]/sum(vec[,i])
+      newvec <- newvec + temp
+    }
+  }
+  W <- diag(newvec) + (diag(vertices) - diag(newvec))%*%C
+  return(W)
+}
+
 data(faux.mesa.high)
 
 model <- ergm(faux.mesa.high ~ edges + nodematch('Sex',diff=TRUE) + nodematch('Race') + nodematch('Grade',diff=TRUE) + gwesp,control = control.ergm(MCMLE.maxit=100,parallel = detectCores()))
