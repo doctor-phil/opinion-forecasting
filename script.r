@@ -4,7 +4,7 @@ library(parallel)
 library(ggplot2)
 
 num_iter <- 1000
-time_steps <- 100
+time_steps <- 150
 
 normalize_stochastic <- function(A) {
   vertices <- length(A[1,])
@@ -46,16 +46,23 @@ C <- as.matrix(faux.mesa.high)
 
 vertices <- length(C[1,])
 
-y0 <- rnorm(vertices,0,1)
+y0 <- runif(vertices,0,1) #rnorm(vertices,0,1)
 
 y <- matrix(nrow=vertices,ncol=time_steps)
 y_hat <- matrix(0,nrow=vertices,ncol=time_steps)
 y2 <- matrix(nrow=vertices,ncol=time_steps)
 
 A <- normalize_stochastic(C)
+W <- A
+norm_diff <- 10
+while (norm_diff > 0.0001) {
+  temp <- diag(W)
+  W <- reflected_appraisal(W)
+  norm_diff <- norm((diag(W)-temp),"2")
+}
 
-y[,1] <- A%*%y0
-y2[,1] <- A%*%y0
+y[,1] <- W%*%y0
+y2[,1] <- W%*%y0
 
 for (t in 2:time_steps) {
   y[,t] <- A%*%y[,t-1]
@@ -64,12 +71,17 @@ for (t in 2:time_steps) {
 
 for (i in 1:num_iter) {
   B <- normalize_stochastic(as.matrix(simulate(model)))
+  W <- B
   norm_diff <- 10
-  while (norm_diff < )
-  y_temp <- B%*%y0
+  while (norm_diff < 0.0001) {
+    temp <- diag(W)
+    W <- reflected_appraisal(W)
+    norm_diff <- norm((diag(W)-temp),"2")
+  }
+    y_temp <- W%*%y0
   y_hat[,1] <- y_hat[,1] + y_temp
   for (t in 2:time_steps) {
-    y_temp <- B%*%y_temp
+    y_temp <- W%*%y_temp
     y_hat[,t] <- y_hat[,t] + y_temp
   }
 }
@@ -86,16 +98,28 @@ for (t in 1:time_steps) {
 avg_op <- vector('double')
 avg_op_hat <- vector('double')
 avg_op_revised <- vector('double')
+med_op <- vector('double')
+med_op_hat <- vector('double')
 
 for (t in 1:time_steps) {
   avg_op[t] <- mean(y[,t])
   avg_op_hat[t] <- mean(y_hat[,t])
   avg_op_revised[t] <- mean(y2[,t])
+  
+  med_op[t] <- median(y[,t])
+  med_op_hat[t] <- median(y_hat[,t])
 }
+
 m <- vector('double',length=time_steps)
 m[] <- mean(y0)
+act <- vector('double',length=time_steps)
+act[] <- 0.5
 plot(avg_op_revised,ylim = c(min(c(min(avg_op_hat),min(avg_op),min(avg_op_revised))),max(c(max(avg_op_hat),max(avg_op),max(avg_op_revised)))))
 lines(m,col="red")
-points(1:100,avg_op_hat,col="blue",pch="+")
-points(1:100,avg_op,col="dark red",pch="*")
-points(1:100,avg_op_revised,col="green",pch="o")
+lines(m,col='yellow')
+points(1:time_steps,avg_op_hat,col="blue",pch="+")
+points(1:time_steps,avg_op,col="dark red",pch="*")
+points(1:time_steps,med_op,col="purple")
+points(1:time_steps,med_op_hat)
+points(1:time_steps,avg_op_revised,col="green",pch="o")
+
