@@ -8,12 +8,12 @@ time_steps <- 150
 
 normalize_stochastic <- function(A) {
   vertices <- length(A[1,])
-  for ( i in 1:vertices ) {		#stochasticize the matrix
+  for ( i in 1:vertices ) {		# stochasticize the matrix
     links <- sum(A[i,])
     if (links==0) {
-      A[i,i]=1			          #1s on diagonal if no links
+      A[i,i]=1			        # 1s on diagonal if no links
     } else {
-      A[i,] = A[i,] / links		#otherwise, normalize so sum is 1
+      A[i,] = A[i,] / links		# otherwise, normalize so sum is 1
     }
   }
   return(A)
@@ -21,41 +21,41 @@ normalize_stochastic <- function(A) {
 
 reflected_appraisal <- function(A) {
   vertices<- length(A[1,])
-  AT <- t(A)                  #for left eigenvector
-  C <- A - diag(diag(A))
-  val <- Re(zapsmall(eigen(AT)$values))     #find all eigenvalues
-  vec <- Re(zapsmall(eigen(AT)$vectors))
-  if (sum(vec < 0)>0) { vec <- -vec } 
+  AT <- t(A)                  		# transpose for left eigenvector
+  C <- A - diag(diag(A))		# remove the diagonal for later
+  val <- Re(zapsmall(eigen(AT)$values)) # find all eigenvalues
+  vec <- Re(zapsmall(eigen(AT)$vectors))# find all eigenvectors
+  if (sum(vec < 0)>0) { vec <- -vec }
   newvec <- vector('double',vertices)
   newvec[] <- 0
   for (i in 1:vertices) {
     if (val[i]==1) {
-      temp <- vec[,i]/sum(vec[,i])
-      newvec <- newvec + temp
+      temp <- vec[,i]/sum(vec[,i])	# normalize to sum 1
+      newvec <- newvec + temp		# add to social power vector
     }
   }
   W <- diag(newvec) + (diag(vertices) - diag(newvec))%*%C
-  return(W)
+  return(W)				# form W matrix
 }
 
-data(faux.mesa.high)
+data(faux.mesa.high)			# load faux mesa high network and fit ERGM model
 
 model <- ergm(faux.mesa.high ~ edges + nodematch('Sex',diff=TRUE) + nodematch('Race') + nodematch('Grade',diff=TRUE) + gwesp,control = control.ergm(MCMLE.maxit=100,parallel = detectCores()))
 
-C <- as.matrix(faux.mesa.high)
+C <- as.matrix(faux.mesa.high)		# get adjacency matrix
 
 vertices <- length(C[1,])
 
-y0 <- runif(vertices,0,1) #rnorm(vertices,0,1)
+y0 <- runif(vertices,0,1) 		#rnorm(vertices,0,1) # initialize opinions at time 0
 
 y <- matrix(nrow=vertices,ncol=time_steps)
 y_hat <- matrix(0,nrow=vertices,ncol=time_steps)
 y2 <- matrix(nrow=vertices,ncol=time_steps)
 
-A <- normalize_stochastic(C)
+A <- normalize_stochastic(C)		# normalize adjacency to C row stochastic
 W <- A
 norm_diff <- 10
-while (norm_diff > 0.0001) {
+while (norm_diff > 0.0001) {		# iterate reflected appraisal to convergence
   temp <- diag(W)
   W <- reflected_appraisal(W)
   norm_diff <- norm((diag(W)-temp),"2")
@@ -64,14 +64,14 @@ while (norm_diff > 0.0001) {
 y[,1] <- W%*%y0
 y2[,1] <- W%*%y0
 
-for (t in 2:time_steps) {
+for (t in 2:time_steps) {		# iterate opinion exchange over the real network. Also, do the new-network-each-time model
   y[,t] <- A%*%y[,t-1]
   y2[,t] <- normalize_stochastic(as.matrix(simulate(model)))%*%y2[,t-1]
 }
 
-for (i in 1:num_iter) {
+for (i in 1:num_iter) {			# Markov Chain simulation of mean opinion
   B <- normalize_stochastic(as.matrix(simulate(model)))
-  W <- B
+  W <- B				# simulate new network and iterate 1. social power and 2. opinions
   norm_diff <- 10
   while (norm_diff < 0.0001) {
     temp <- diag(W)
@@ -86,7 +86,7 @@ for (i in 1:num_iter) {
   }
 }
 
-y_hat <- (1/num_iter)*y_hat
+y_hat <- (1/num_iter)*y_hat		# average the resulting opinion vectors
 
 resids <- y - y_hat
 norm_resids <- vector(mode="double",length=10)
@@ -101,7 +101,7 @@ avg_op_revised <- vector('double')
 med_op <- vector('double')
 med_op_hat <- vector('double')
 
-for (t in 1:time_steps) {
+for (t in 1:time_steps) {		# track and plot mean and median opinions over time
   avg_op[t] <- mean(y[,t])
   avg_op_hat[t] <- mean(y_hat[,t])
   avg_op_revised[t] <- mean(y2[,t])
