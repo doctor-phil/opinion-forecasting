@@ -1,7 +1,6 @@
 library(statnet)
 library(mgcv)
 library(parallel)
-library(ggplot2)
 
 num_iter <- 1000
 time_steps <- 150
@@ -55,7 +54,7 @@ y2 <- matrix(nrow=vertices,ncol=time_steps)
 A <- normalize_stochastic(C)		# normalize adjacency to C row stochastic
 W <- A
 norm_diff <- 10
-while (norm_diff > 0.0001) {		# iterate reflected appraisal to convergence
+while (norm_diff > 0.00000001) {		# iterate reflected appraisal to convergence
   temp <- diag(W)
   W <- reflected_appraisal(W)
   norm_diff <- norm((diag(W)-temp),"2")
@@ -114,7 +113,7 @@ m <- vector('double',length=time_steps)
 m[] <- mean(y0)
 act <- vector('double',length=time_steps)
 act[] <- 0.5
-plot(avg_op_revised,ylim = c(min(c(min(avg_op_hat),min(avg_op),min(avg_op_revised))),max(c(max(avg_op_hat),max(avg_op),max(avg_op_revised)))))
+plot(avg_op_revised,ylim = c(min(c(min(avg_op_hat),min(avg_op),min(avg_op_revised),min(med_op),min(med_op_hat))),max(c(max(avg_op_hat),max(avg_op),max(avg_op_revised),max(med_op),max(med_op_hat)))))
 lines(m,col="red")
 lines(m,col='yellow')
 points(1:time_steps,avg_op_hat,col="blue",pch="+")
