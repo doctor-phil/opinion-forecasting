@@ -3,7 +3,7 @@ library(mgcv)
 library(parallel)
 
 num_iter <- 1000
-time_steps <- 150
+time_steps <- 100
 
 normalize_stochastic <- function(A) {
   vertices <- length(A[1,])
@@ -113,7 +113,7 @@ m <- vector('double',length=time_steps)
 m[] <- mean(y0)
 act <- vector('double',length=time_steps)
 act[] <- 0.5
-plot(avg_op_revised,ylim = c(min(c(min(avg_op_hat),min(avg_op),min(avg_op_revised),min(med_op),min(med_op_hat))),max(c(max(avg_op_hat),max(avg_op),max(avg_op_revised),max(med_op),max(med_op_hat)))))
+plot(avg_op_revised,xlab="Time Step",ylab="Opinion",ylim = c(min(c(min(avg_op_hat),min(avg_op),min(avg_op_revised),min(med_op),min(med_op_hat))),max(c(max(avg_op_hat),max(avg_op),max(avg_op_revised),max(med_op),max(med_op_hat)))))
 lines(m,col="red")
 lines(m,col='yellow')
 points(1:time_steps,avg_op_hat,col="blue",pch="+")
@@ -121,4 +121,6 @@ points(1:time_steps,avg_op,col="dark red",pch="*")
 points(1:time_steps,med_op,col="purple")
 points(1:time_steps,med_op_hat)
 points(1:time_steps,avg_op_revised,col="green",pch="o")
+legend("right",legend=c("Predicted Average","Actual Average","Predicted Median","Actual Median","DeGroot Reforming","Average of Initial States"),col=c("blue","red","black","purple","green","yellow"),pch=c("+","*","o","o","o","-"))
+
 
